@@ -132,7 +132,6 @@ class AuthManager:
         response = requests.get(url, headers=headers, cookies=self.cookies)
         if response.status_code != 200:
             raise ValueError(f"Failed to fetch session cookie: {response.status_code}")
-        print(response.headers)
 
         # 从响应中提取cookie
         if 'set-cookie' in response.headers:
@@ -287,26 +286,6 @@ def delete_conversation(conversation_id):
         logger.error(f"Error deleting conversation {conversation_id}: {str(e)}")
         return False
 
-
-@app.before_request
-def initialize_auth():
-    """在第一个请求前初始化认证信息"""
-
-    #
-    app.before_request_funcs[None].remove(initialize_auth)
-
-    config_url = os.getenv("CONFIG_URL")
-    if not config_url:
-        raise ValueError("CONFIG_URL environment variable is required")
-
-    auth_manager.initialize_from_url(config_url)
-    logger.info("Authentication initialized successfully")
-    logger.info(f"Config URL: {config_url}")
-    logger.info(f"cookies: {auth_manager.cookies}")
-    logger.info(f"uid: {auth_manager.uid}")
-    logger.info(f"token: {auth_manager.user_token}")
-
-
 @app.route('/v1/chat/completions', methods=['POST'])
 def chat_completions():
     """OpenAI兼容API端点"""
@@ -426,7 +405,19 @@ def chat_completions():
 
 if __name__ == '__main__':
     # 检查配置URL
-    if not os.getenv("CONFIG_URL"):
-        raise ValueError("CONFIG_URL environment variable is required")
+    config_url = os.getenv("CONFIG_URL")
+    
+    if not config_url:
+        config_url = input("CONFIG_URL:")
+        
+    if not config_url:
+        raise ValueError("CONFIG_URL is required")
 
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    auth_manager.initialize_from_url(config_url)
+    logger.info("Authentication initialized successfully")
+    logger.info(f"Config URL: {config_url}")
+    logger.info(f"cookies: {auth_manager.cookies}")
+    logger.info(f"uid: {auth_manager.uid}")
+
+    # auth api would be called twice if debug=True
+    app.run(host='0.0.0.0', port=5000, debug=False)
