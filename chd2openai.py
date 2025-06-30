@@ -51,9 +51,6 @@ class AuthManager:
         # 获取应用配置cookie
         self._fetch_app_config()
 
-        # 获取会话cookie (非必要，作用未知，删了也不会有多大问题)
-        self._fetch_session_cookie()
-
         # 构建通用请求头
         self.headers = {
             "Accept": "*/*",
@@ -93,6 +90,8 @@ class AuthManager:
         self.uid = data.get("uid")
         if not self.uid:
             raise ValueError("No UID found in user info response")
+        # pure nonsense, i don't know why, but it seems session_id always matches uid
+        #self.cookies["session_id"] = self.uid
 
     def _fetch_app_config(self):
         """获取应用配置cookie"""
@@ -117,26 +116,10 @@ class AuthManager:
                 if len(parts) == 2:
                     key, value = parts
                     self.cookies[key] = value
-
-    def _fetch_session_cookie(self):
-        """获取会话cookie"""
-        url = f"{SCHOOL_BASE_URL}/chat/api/parameters"
-        headers = {
-            "Accept": "application/json, text/plain, */*",
-            "Referer": self.config_url,
-            "User-Agent": USER_AGENT,
-            "x-ai-portal-token": self.user_token,
-            "x-ai-portal-uid": self.uid
-        }
-
-        response = requests.get(url, headers=headers, cookies=self.cookies)
-        if response.status_code != 200:
-            raise ValueError(f"Failed to fetch session cookie: {response.status_code}")
-
-        # 从响应中提取cookie
-        if 'set-cookie' in response.headers:
-            _,session_cookie = response.headers['set-cookie'].split(';')[0].split('=',1)
-            self.cookies['session_id'] = session_cookie
+        try:
+            logger.info(f"model: {response.json()['appName']}")
+        except:
+            pass
 
     def get_cookie_header(self):
         """获取完整的Cookie头部值"""
@@ -408,6 +391,8 @@ if __name__ == '__main__':
     config_url = os.getenv("CONFIG_URL")
     
     if not config_url:
+        print("cannot find CONFIG_URL in environment variable")
+        print("get one here: https://agi.chd.edu.cn")
         config_url = input("CONFIG_URL:")
         
     if not config_url:
