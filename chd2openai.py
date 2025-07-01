@@ -403,6 +403,7 @@ if __name__ == '__main__':
     if not config_url:
         raise ValueError("CONFIG_URL is required")
 
+    logger.info("Authentication initializing")
     auth_manager.initialize_from_url(config_url)
     try:
         logger.info(f"appName(model):    {auth_manager.model}")
