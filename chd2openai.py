@@ -1,3 +1,4 @@
+import base64
 import os
 import json
 import time
@@ -28,6 +29,7 @@ class AuthManager:
         self.user_token = None
         self.app_id = None
         self.uid = None
+        self.model = None # 模型由CONFIG_URL决定
         self.cookies = {}
         self.headers = {}
 
@@ -117,8 +119,9 @@ class AuthManager:
                     key, value = parts
                     self.cookies[key] = value
         try:
-            logger.info(f"model: {response.json()['appName']}")
+            self.model = response.json()['appName']
         except:
+            logger.warning("Failed to fetch app model, CONFIG_URL may have expired")
             pass
 
     def get_cookie_header(self):
@@ -185,7 +188,7 @@ def convert_to_openai_chunk(data, message_id, created):
                 "id": message_id,
                 "object": "chat.completion.chunk",
                 "created": created,
-                "model": "DeepSeek-R1",
+                "model": auth_manager.model,
                 "choices": [{
                     "index": 0,
                     "delta": {"content": event_data.get("answer", "")},
@@ -198,7 +201,7 @@ def convert_to_openai_chunk(data, message_id, created):
                 "id": message_id,
                 "object": "chat.completion.chunk",
                 "created": created,
-                "model": "DeepSeek-R1",
+                "model": auth_manager.model,
                 "choices": [{
                     "index": 0,
                     "delta": {},
@@ -227,7 +230,7 @@ def convert_to_openai_complete(response_data, message_id, created):
         "id": message_id,
         "object": "chat.completion",
         "created": created,
-        "model": "DeepSeek-R1",
+        "model": auth_manager.model,
         "choices": [{
             "index": 0,
             "message": {
@@ -369,7 +372,7 @@ def chat_completions():
             "id": message_id,
             "object": "chat.completion",
             "created": created,
-            "model": "DeepSeek-R1",
+            "model": auth_manager.model,
             "choices": [{
                 "index": 0,
                 "message": {
@@ -390,7 +393,9 @@ if __name__ == '__main__':
     # 检查配置URL
     config_url = os.getenv("CONFIG_URL")
     
-    if not config_url:
+    if config_url:
+        logger.info(f"CONFIG_URL(env):   {config_url}")
+    else:
         print("cannot find CONFIG_URL in environment variable")
         print("get one here: https://agi.chd.edu.cn")
         config_url = input("CONFIG_URL:")
@@ -399,10 +404,17 @@ if __name__ == '__main__':
         raise ValueError("CONFIG_URL is required")
 
     auth_manager.initialize_from_url(config_url)
-    logger.info("Authentication initialized successfully")
-    logger.info(f"Config URL: {config_url}")
-    logger.info(f"cookies: {auth_manager.cookies}")
-    logger.info(f"uid: {auth_manager.uid}")
+    try:
+        logger.info(f"appName(model):    {auth_manager.model}")
+        logger.info(f"dify_app_id:       {auth_manager.cookies['dify_app_id']}")
+        logger.info(f"dify_app_config:   {auth_manager.cookies['dify_app_config']}")
+        logger.info(f"dify_app_config:   {base64.b64decode(auth_manager.cookies['dify_app_config']).decode('utf-8')}")
+        logger.info(f"x-ai-portal-token: {auth_manager.user_token}")
+        logger.info(f"x-ai-portal-uid:   {auth_manager.uid}")
+        logger.info("Authentication initialized successfully")
+    except Exception as e:
+        logger.error(f"Authentication done, but failed with {e}")
+        exit(1)
 
     # auth api would be called twice if debug=True
     app.run(host='0.0.0.0', port=5000, debug=False)
