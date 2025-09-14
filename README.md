@@ -34,3 +34,4 @@
 2. 模型选择或许并非无法实现，可以做成提交`CONFIG_URL`来添加/更新模型的方式，提供认证信息存储管理
    对于不同的模型，`CONFIG_URL`中userToken是相同的，appId是不变的，可以提供API提交appId添加更多模型，提交userToken刷新认证信息
 3. 学校部署的DS非常慢，但真的是671B，fp8的完整模型
+4. hamood
