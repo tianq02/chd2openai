@@ -1,3 +1,8 @@
+> [!WARNING]  
+> https://agi.chd.edu.cn/ 已经停止服务，表现为ssl证书过期、网页端无法对话等  
+> 长安大学AI门户已经迁移，请移步 https://aiportal.chd.edu.cn/  
+> 受此影响，本项目现在无法使用，造成不便敬请谅解
+
 # CHD 2 OpenAI
 
 长安大学有自己的[ai门户](https://agi.chd.edu.cn/)，但小沙同学没有提供公开的API供第三方应用使用，实际体验不佳。
